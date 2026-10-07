@@ -1,7 +1,7 @@
 {
   "name": "Chakra – Period Tracker",
   "short_name": "Chakra",
-  "description": "Period tracking, predictions aur reminders — sirf tumhare phone par, koi data upload nahi.",
+  "description": "Period tracking, predictions and reminders — stored only on your device, nothing uploaded.",
   "start_url": "./index.html?source=pwa",
   "scope": "./",
   "display": "standalone",
@@ -22,14 +22,14 @@
     {
       "name": "Aaj ka log",
       "short_name": "Log",
-      "description": "Aaj ki feelings aur symptoms log karo",
+      "description": "Log today's feelings and symptoms",
       "url": "./index.html?tab=cal&action=logtoday",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Reminders",
       "short_name": "Alarm",
-      "description": "Reminders aur notifications manage karo",
+      "description": "Manage reminders and notifications",
       "url": "./index.html?tab=rem",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
