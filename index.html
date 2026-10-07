@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#a8275f"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><title>Chakra – Period Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f1f7;--card:#fff;--ink:#2a1830;--mute:#7b6a82;--line:#e6dcea;--acc:#a8275f;--accsoft:#f6d5e3;--fert:#1f8f84;--fertsoft:#cdeeea;--ov:#c98a00;--pred:#e9a9c3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1020;--card:#27182f;--ink:#f3e9f6;--mute:#a995b1;--line:#3b2848;--acc:#f06ea6;--accsoft:#4a1f37;--fert:#4fd1c5;--fertsoft:#16413d;--ov:#f2b632;--pred:#8a4a68}}
+:root[data-theme="dark"]{--bg:#1a1020;--card:#27182f;--ink:#f3e9f6;--mute:#a995b1;--line:#3b2848;--acc:#f06ea6;--accsoft:#4a1f37;--fert:#4fd1c5;--fertsoft:#16413d;--ov:#f2b632;--pred:#8a4a68}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.45}
+main{max-width:520px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:22px;margin:4px 0 14px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:16px;margin:0 0 10px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.mute{color:var(--mute);font-size:13px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:11px 16px;font-weight:600;background:var(--acc);color:#fff}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.day:focus-visible{outline:3px solid var(--fert);outline-offset:2px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{background:transparent;color:var(--mute);flex:1;max-width:100px;padding:8px 2px;font-size:12px;border-radius:10px}
+nav button[aria-selected=true]{color:var(--acc);background:var(--accsoft)}
+.ring{display:flex;flex-direction:column;align-items:center;padding:8px 0}
+.ring svg{width:210px;height:210px}
+.big{font-size:44px;font-weight:700;line-height:1}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;background:var(--accsoft);color:var(--acc)}
+.pill.f{background:var(--fertsoft);color:var(--fert)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:11px;color:var(--mute);text-align:center}
+.day{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;background:transparent;border:1px solid transparent;color:var(--ink);padding:0;font-weight:500}
+.day.p{background:var(--acc);color:#fff}
+.day.pr{background:var(--accsoft);border:1px dashed var(--pred)}
+.day.fe{background:var(--fertsoft)}
+.day.ov{background:var(--fertsoft);box-shadow:inset 0 0 0 2px var(--ov)}
+.day.td{border-color:var(--ink)}
+.day.dot::after{content:"";position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--ov)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--mute)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 12px;border-radius:99px;background:var(--bg);border:1px solid var(--line);color:var(--ink);font-size:13px;font-weight:500}
+.chip[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.rem{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.rem:first-of-type{border-top:0}.rem div{flex:1}
+.rem input[type=checkbox]{width:22px;height:22px;flex:none}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat b{display:block;font-size:26px}
+#banner{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));max-width:496px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:14px;z-index:30;display:none}
+#banner.on{display:block}
+#banner .row{margin-top:10px}
+#banner button{background:var(--acc);color:#fff}#banner button.ghost{color:var(--bg);border-color:var(--bg)}
+.hide{display:none}#lock{position:fixed;inset:0;background:var(--bg);z-index:40;display:none;align-items:center;justify-content:center;padding:24px}#lock.on{display:flex}
+@media(prefers-reduced-motion:no-preference){#banner.on{animation:sh .5s 2}}
+@keyframes sh{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+</style>
+</head>
+<body>
+<div id="lock"><div class="card" style="width:100%;max-width:320px;text-align:center"><h2>Chakra locked 🔒</h2><input id="lp" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" style="text-align:center"><br><br><button id="lb">Unlock</button><p id="le" class="mute"></p></div></div>
+<div id="banner" role="alert"><b id="bt"></b><div id="bm" class="mute" style="color:inherit;opacity:.8"></div><div class="row"><button id="snz">10 min baad</button><button class="ghost" id="bok">Band karo</button></div></div>
+<main id="app"></main>
+<nav id="nav" role="tablist"></nav>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='chakra.v1';
+const DEF={periods:[],logs:{},settings:{cycle:28,plen:5,theme:'auto'},reminders:[
+ {id:'r1',type:'period',label:'Period aane wale hain',lead:2,time:'09:00',on:true},
+ {id:'r2',type:'daily',label:'Goli / supplement lo',time:'21:00',on:false},
+ {id:'r3',type:'daily',label:'Paani piyo',time:'14:00',on:false}],fired:{}};
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))||structuredClone(DEF)}catch(e){S=structuredClone(DEF)}
+S.fired=S.fired||{};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+// ---------- dates
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const par=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const add=(s,n)=>{const d=par(s);d.setDate(d.getDate()+n);return iso(d)};
+const diff=(a,b)=>Math.round((par(a)-par(b))/864e5);
+const today=()=>iso(new Date());
+const MON=['Janvari','Farvari','March','April','May','June','July','August','September','October','November','December'];
+const fmt=s=>{const d=par(s);return d.getDate()+' '+MON[d.getMonth()].slice(0,3)};
+// ---------- prediction engine
+function sorted(){return [...S.periods].sort((a,b)=>a.start<b.start?-1:1)}
+function cycles(){const p=sorted(),o=[];for(let i=1;i<p.length;i++){const d=diff(p[i].start,p[i-1].start);if(d>=15&&d<=60)o.push(d)}return o}
+function avg(a,f){return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):f}
+function stats(){
+ const c=cycles().slice(-6);
+ const cyc=avg(c,+S.settings.cycle);
+ const lens=sorted().filter(p=>p.end).map(p=>diff(p.end,p.start)+1).filter(n=>n>0&&n<15).slice(-6);
+ const plen=avg(lens,+S.settings.plen);
+ const sd=c.length>1?Math.sqrt(c.reduce((s,x)=>s+(x-cyc)**2,0)/c.length):null;
+ return{cyc,plen,sd,c,n:sorted().length}}
+function forecast(n=4){
+ const p=sorted();if(!p.length)return[];
+ const st=stats(),out=[];let s=p[p.length-1].start;
+ for(let i=0;i<n;i++){s=add(s,st.cyc);const ov=add(s,-14);out.push({start:s,end:add(s,st.plen-1),ov,fs:add(ov,-5),fe:add(ov,1)})}
+ return out}
+function dayType(d){
+ const t={};
+ for(const p of S.periods){const e=p.end||(diff(today(),p.start)<10&&diff(today(),p.start)>=0?today():p.start);if(d>=p.start&&d<=e)t.p=1}
+ const st=stats();
+ for(const f of forecast(6)){if(d>=f.start&&d<=f.end)t.pr=1;if(d>=f.fs&&d<=f.fe)t.fe=1;if(d===f.ov)t.ov=1}
+ // current-cycle fertile window (if next period not yet counted)
+ return t}
+function status(){
+ const p=sorted();if(!p.length)return null;
+ const last=p[p.length-1],t=today(),st=stats();
+ const day=diff(t,last.start)+1;
+ const next=add(last.start,st.cyc),left=diff(next,t);
+ const ov=add(next,-14);
+ const open=!last.end&&day<=12;
+ let phase='Follicular',cls='';
+ if(open||day<=st.plen&&last.end&&t<=last.end){phase='Period chal rahi hai'}
+ else if(t>=add(ov,-5)&&t<=add(ov,1)){phase=t===ov?'Ovulation din':'Fertile window';cls='f'}
+ else if(t>ov){phase='Luteal phase'}
+ else phase='Follicular phase';
+ return{last,day,next,left,ov,phase,cls,open}}
+// ---------- UI
+let tab='today',cm=new Date(),sel=null;
+const TABS=[['today','Aaj'],['cal','Calendar'],['rem','Alarm'],['stats','Stats'],['set','Settings']];
+function nav(){$('#nav').innerHTML=TABS.map(([k,v])=>`<button role="tab" aria-selected="${tab===k}" data-t="${k}">${v}</button>`).join('');
+ $('#nav').onclick=e=>{const t=e.target.dataset.t;if(t){tab=t;sel=null;render()}}}
+function render(){nav();applyTheme();const f={today:vToday,cal:vCal,rem:vRem,stats:vStats,set:vSet}[tab];$('#app').innerHTML=f();bind()}
+function applyTheme(){const t=S.settings.theme;if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t)}
+function vToday(){
+ if(S.settings.preg&&S.settings.preg.on)return vPreg();
+ const s=status(),st=stats();
+ if(!s)return`<h1>Chakra</h1><div class="card"><h2>Shuru karte hain</h2><p class="mute">Apni pichli period ki pehli date daalo. Jitni zyada cycles log hongi, prediction utni sahi hogi.</p><label>Period start date</label><input type="date" id="fs" max="${today()}" value="${today()}"><br><br><button data-a="addstart">Save karo</button></div>`;
+ const pct=Math.min(1,s.day/st.cyc),C=2*Math.PI*86;
+ const msg=s.left>0?`Agli period ${s.left} din mein (${fmt(s.next)})`:s.left===0?'Period aaj expected hai':`Period ${-s.left} din late hai`;
+ return`<h1>Namaste 👋</h1>
+ <div class="card ring"><svg viewBox="0 0 200 200" role="img" aria-label="Cycle day ${s.day}"><circle cx="100" cy="100" r="86" fill="none" stroke="var(--line)" stroke-width="12"/><circle cx="100" cy="100" r="86" fill="none" stroke="var(--acc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}" transform="rotate(-90 100 100)"/><text x="100" y="98" text-anchor="middle" font-size="13" fill="var(--mute)" font-family="inherit">Cycle day</text><text x="100" y="136" text-anchor="middle" font-size="46" font-weight="700" fill="var(--ink)" font-family="inherit">${s.day}</text></svg>
+ <span class="pill ${s.cls}">${s.phase}</span><p style="margin:10px 0 0;font-weight:600">${msg}</p><p class="mute" style="margin:2px 0 0">Ovulation: ${fmt(s.ov)} · Fertile: ${fmt(add(s.ov,-5))}–${fmt(add(s.ov,1))}</p></div>
+ <div class="row" style="margin-bottom:12px">${s.open?`<button data-a="end">Period khatam hui</button>`:`<button data-a="start">Period shuru hui</button>`}<button class="ghost" data-a="logtoday">Aaj ka log</button></div>
+ ${s.left<0&&s.left>-45?`<p class="mute">Cycle late ho sakti hai (stress, neend, health). Agar aksar aisa ho ya 3+ mahine miss ho, doctor se milo.</p>`:''}
+ ${insights()}<div class="card"><h2>Aaj kaisa lag raha hai?</h2>${logForm(today())}</div>`}
+const SYM=['Cramps','Sir dard','Thakaan','Bloating','Pimples','Back pain','Nausea','Cravings'];
+const MOOD=['😊 Khush','😐 Normal','😢 Udaas','😠 Chidchida','😰 Anxious'];
+const FLOW=['Halka','Medium','Heavy'];
+function logForm(d){
+ const l=S.logs[d]||{};
+ return`<div data-d="${d}"><label>Flow</label><div class="chips">${FLOW.map(x=>`<button class="chip" aria-pressed="${l.flow===x}" data-f="${x}">${x}</button>`).join('')}</div>
+ <label>Mood</label><div class="chips">${MOOD.map(x=>`<button class="chip" aria-pressed="${l.mood===x}" data-m="${x}">${x}</button>`).join('')}</div>
+ <label>Symptoms</label><div class="chips">${SYM.map(x=>`<button class="chip" aria-pressed="${(l.sym||[]).includes(x)}" data-s="${x}">${x}</button>`).join('')}</div>
+ <label>Subah ka temperature (°C, BBT)</label><input type="number" step="0.01" min="34" max="39" data-b value="${l.bbt||''}" placeholder="36.45"><label>Note</label><textarea rows="2" data-n placeholder="Kuch likhna ho to...">${l.note||''}</textarea></div>`}
+function vCal(){
+ const y=cm.getFullYear(),m=cm.getMonth(),first=new Date(y,m,1),n=new Date(y,m+1,0).getDate();
+ let h=`<h1>Calendar</h1><div class="card"><div class="row" style="margin-bottom:10px"><button class="ghost sm" data-a="prev" aria-label="Pichla mahina">‹</button><b style="text-align:center">${MON[m]} ${y}</b><button class="ghost sm" data-a="next" aria-label="Agla mahina">›</button></div><div class="cal">`;
+ h+=['Ra','So','Ma','Bu','Gu','Shu','Sha'].map(d=>`<div class="dow">${d}</div>`).join('');
+ for(let i=0;i<first.getDay();i++)h+='<div></div>';
+ for(let d=1;d<=n;d++){const s=`${y}-${pad(m+1)}-${pad(d)}`,t=dayType(s);
+  const c=['day',t.p&&'p',!t.p&&t.pr&&'pr',!t.p&&t.ov&&'ov',!t.p&&!t.ov&&t.fe&&'fe',s===today()&&'td',S.logs[s]&&'dot'].filter(Boolean).join(' ');
+  h+=`<button class="${c}" data-day="${s}" aria-label="${s}">${d}</button>`}
+ h+=`</div><div class="legend"><span><i style="background:var(--acc)"></i>Period</span><span><i style="background:var(--accsoft);border:1px dashed var(--pred)"></i>Predicted</span><span><i style="background:var(--fertsoft)"></i>Fertile</span><span><i style="box-shadow:inset 0 0 0 2px var(--ov)"></i>Ovulation</span></div></div>`;
+ if(sel)h+=`<div class="card"><h2>${fmt(sel)}</h2>${logForm(sel)}<div class="row" style="margin-top:12px"><button class="ghost" data-a="togglep">${dayType(sel).p?'Period se hatao':'Period mark karo'}</button></div></div>`;
+ return h}
+function vRem(){
+ const perm='Notification'in window?Notification.permission:'unsupported';
+ return`<h1>Alarm & Reminders</h1>
+ <div class="card"><h2>Reminders</h2>${S.reminders.map(r=>`<div class="rem"><input type="checkbox" data-rid="${r.id}" ${r.on?'checked':''} aria-label="${r.label}"><div><b>${r.label}</b><div class="mute">${r.type==='period'?`Period se ${r.lead} din pehle`:r.type==='fert'?`Fertile window se ${r.lead} din pehle`:'Roz'}, ${r.time}</div></div><button class="ghost sm" data-del="${r.id}" aria-label="Hatao">✕</button></div>`).join('')||'<p class="mute">Koi reminder nahi.</p>'}</div>
+ <div class="card"><h2>Naya reminder</h2><label>Kya yaad dilana hai?</label><input id="nl" placeholder="e.g. Iron ki goli"><div class="row"><div><label>Type</label><select id="nt"><option value="daily">Roz</option><option value="period">Period se pehle</option><option value="fert">Fertile window se pehle</option></select></div><div><label>Time</label><input type="time" id="ntm" value="09:00"></div></div><label>Period se kitne din pehle (period / fertile type)</label><input type="number" id="nld" min="0" max="7" value="2"><br><br><button data-a="addrem">Reminder jodo</button></div>
+ <div class="card"><h2>Notifications</h2><p class="mute">Status: ${perm==='granted'?'Chalu ✓':perm==='denied'?'Browser mein blocked hai':perm==='unsupported'?'Is browser mein support nahi':'Abhi band'}. Alarm tabhi bajega jab ye page khula ho (tab background mein chalega).</p><div class="row"><button data-a="perm">Notifications allow karo</button><button class="ghost" data-a="test">Alarm test</button></div></div>`}
+function vStats(){
+ const st=stats();
+ if(st.n<1)return`<h1>Stats</h1><div class="card"><p class="mute">Pehli period log karo, phir stats yahan dikhenge.</p></div>`;
+ const c=st.c,max=Math.max(40,...c);
+ const reg=st.sd==null?'Abhi data kam hai':st.sd<=2?'Bahut regular':st.sd<=4?'Regular':'Thodi irregular';
+ const bars=c.length?`<svg viewBox="0 0 ${c.length*44+10} 120" style="width:100%;height:140px" role="img" aria-label="Pichli cycles ki length">${c.map((v,i)=>`<rect x="${i*44+10}" y="${100-v/max*90}" width="30" height="${v/max*90}" rx="6" fill="var(--acc)"/><text x="${i*44+25}" y="${96-v/max*90}" text-anchor="middle" font-size="11" fill="var(--ink)" font-family="inherit">${v}</text>`).join('')}</svg>`:'<p class="mute">Kam se kam 2 periods chahiye.</p>';
+ const sym={};Object.values(S.logs).forEach(l=>(l.sym||[]).forEach(s=>sym[s]=(sym[s]||0)+1));
+ const top=Object.entries(sym).sort((a,b)=>b[1]-a[1]).slice(0,4);
+ return`<h1>Stats</h1><div class="stat"><div class="card"><b>${st.cyc}</b><span class="mute">Avg cycle (din)</span></div><div class="card"><b>${st.plen}</b><span class="mute">Avg period (din)</span></div><div class="card"><b>${st.n}</b><span class="mute">Logged periods</span></div><div class="card"><b style="font-size:18px;padding:6px 0">${reg}</b><span class="mute">Regularity</span></div></div>
+ <div class="card"><h2>Cycle length history</h2>${bars}</div>
+ ${bbtCard()}<div class="card"><h2>Common symptoms</h2>${top.length?top.map(([k,v])=>`<div class="row" style="margin:4px 0"><span>${k}</span><span class="mute" style="text-align:right">${v} baar</span></div>`).join(''):'<p class="mute">Symptoms log karoge to yahan dikhenge.</p>'}</div>
+ <p class="mute">Ye predictions sirf andaza hain — contraception ke liye inpe bharosa mat karo. Koi dikkat ho to doctor se milo.</p>`}
+function vSet(){const s=S.settings;
+ return`<h1>Settings</h1><div class="card"><label>Default cycle length (din)</label><input type="number" id="sc" min="21" max="45" value="${s.cycle}"><label>Default period length (din)</label><input type="number" id="sp" min="2" max="10" value="${s.plen}"><label>Theme</label><select id="st"><option value="auto" ${s.theme==='auto'?'selected':''}>Auto</option><option value="light" ${s.theme==='light'?'selected':''}>Light</option><option value="dark" ${s.theme==='dark'?'selected':''}>Dark</option></select><br><br><button data-a="saveset">Save karo</button></div>
+ ${extraSet()}<div class="card"><h2>Data</h2><p class="mute">Saara data sirf is browser mein tumhare device par save hota hai. Kahin upload nahi hota.</p><div class="row"><button class="ghost" data-a="export">Backup (JSON)</button><button class="ghost" data-a="import">Restore</button></div><br><button class="ghost" data-a="reset" style="color:var(--acc)">Saara data mitao</button><input type="file" id="fi" accept=".json" class="hide"></div>`}
+// ---------- actions
+function toggleList(l,k){l.includes(k)?l.splice(l.indexOf(k),1):l.push(k)}
+function bind(){
+ const root=$('#app');
+ root.querySelectorAll('[data-d]').forEach(box=>{
+  const d=box.dataset.d;
+  const L=()=>S.logs[d]=S.logs[d]||{};
+  box.onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const l=L();
+   if(b.dataset.f)l.flow=l.flow===b.dataset.f?null:b.dataset.f;
+   if(b.dataset.m)l.mood=l.mood===b.dataset.m?null:b.dataset.m;
+   if(b.dataset.s){l.sym=l.sym||[];toggleList(l.sym,b.dataset.s)}
+   save();b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true')};
+  const n=box.querySelector('[data-n]');if(n)n.oninput=()=>{L().note=n.value;save()};const bb=box.querySelector('[data-b]');if(bb)bb.oninput=()=>{L().bbt=bb.value?+bb.value:null;save()}});
+ root.onclick=e=>{
+  const dd=e.target.closest('[data-day]');if(dd){sel=dd.dataset.day;return render()}
+  const rid=e.target.dataset.del;if(rid){S.reminders=S.reminders.filter(r=>r.id!==rid);save();return render()}
+  const a=e.target.dataset.a;if(!a)return;ACT[a]&&ACT[a]()};
+ root.onchange=e=>{const id=e.target.dataset.rid;if(id){const r=S.reminders.find(r=>r.id===id);r.on=e.target.checked;save();if(r.on)askPerm()}}}
+const ACT={
+ demo(){if(S.periods.length&&!confirm('Demo data tumhara abhi ka data replace karega. Pakka?'))return;loadDemo();tab='today';render()},
+ csv(){saveFile('chakra-periods.csv','start,end,period_days,cycle_days\n'+sorted().map((p,i,a)=>[p.start,p.end||'',p.end?diff(p.end,p.start)+1:'',i?diff(p.start,a[i-1].start):''].join(',')).join('\n'),'text/csv')},
+ async share(){const s=status(),st=stats();if(!s)return alert('Pehle period log karo.');const t=`Chakra update: cycle day ${s.day} (${s.phase}). Agli period lagbhag ${fmt(s.next)} ko expected hai.`;
+  try{if(navigator.share)await navigator.share({text:t});else{await navigator.clipboard.writeText(t);alert('Copy ho gaya:\n'+t)}}catch(e){alert(t)}},
+ async ask(){const q=$('#aq').value.trim(),o=$('#ar');if(!q)return $('#aq').focus();const sm=await cap('sample');if(!sm){o.textContent='Ye feature yahan available nahi hai.';return}
+  const st=stats(),s=status(),sy=Object.values(S.logs).slice(-14).flatMap(l=>l.sym||[]).join(', ')||'none';
+  const ctx=`avg cycle ${st.cyc}d, avg period ${st.plen}d, cycles logged ${st.n}, today cycle day ${s?s.day:'?'}, phase ${s?s.phase:'?'}, recent symptoms: ${sy}`;
+  o.textContent='Soch rahi hoon...';
+  try{const r=await sm(`Tum ek caring period-health assistant ho. Hinglish mein chhote aur saaf jawab do. Diagnosis mat karo; kuch serious lage to doctor se milne ko kaho.\nUser ka data: ${ctx}\nSawal: ${q}`,{onText:({text})=>{o.textContent=text},cache:false});o.textContent=r.text}catch(e){o.textContent=e&&e.code==='not_granted'?'Permission nahi mili.':'Abhi jawab nahi mil paya, thodi der baad try karo.'}},
+ pregon(){const v=$('#lmp').value;if(!v)return;S.settings.preg={on:true,lmp:v};save();render()},
+ pregoff(){S.settings.preg={on:false};save();render()},
+ async setpin(){const p=$('#np').value;if(!/^\d{4,8}$/.test(p))return alert('4 se 8 digit ka PIN daalo');const salt=[...crypto.getRandomValues(new Uint8Array(8))].join('');S.settings.pin={salt,h:await hash(p,salt)};save();render()},
+ rmpin(){S.settings.pin=null;save();render()},
+ install(){DP&&DP.prompt()},
+ report(){saveFile('chakra-doctor-report.html',reportHTML(),'text/html')},
+ async cloudsave(){try{const u=await cap('user'),db=await cap('db');if(!u||!db)return alert('Cloud backup ke liye claude.ai par sign in chahiye.');const id=await u.id();await db.collection('data/users/'+id).doc('backup').set({json:JSON.stringify(S),at:Date.now()});alert('Cloud backup ho gaya ✓')}catch(e){alert('Backup nahi hua: '+(e.message||e.code))}},
+ async cloudload(){try{const u=await cap('user'),db=await cap('db');if(!u||!db)return alert('Pehle claude.ai par sign in karo.');const id=await u.id();const d=await db.collection('data/users/'+id).doc('backup').get();if(!d.exists)return alert('Cloud mein koi backup nahi mila.');if(!confirm('Abhi ka data cloud backup se replace hoga. Pakka?'))return;S=JSON.parse(d.data().json);S.fired=S.fired||{};save();render()}catch(e){alert('Restore nahi hua: '+(e.message||e.code))}},
+ addstart(){const v=$('#fs').value;if(!v)return;S.periods.push({start:v,end:add(v,stats().plen-1)});save();render()},
+ start(){const t=today();if(!S.periods.some(p=>p.start===t))S.periods.push({start:t,end:null});save();render()},
+ end(){const l=sorted().pop();l.end=today();save();render()},
+ logtoday(){tab='cal';cm=new Date();sel=today();render()},
+ prev(){cm=new Date(cm.getFullYear(),cm.getMonth()-1,1);render()},
+ next(){cm=new Date(cm.getFullYear(),cm.getMonth()+1,1);render()},
+ togglep(){
+  const hit=S.periods.find(p=>sel>=p.start&&sel<=(p.end||p.start));
+  if(hit){if(hit.start===sel&&(!hit.end||hit.end===sel))S.periods=S.periods.filter(p=>p!==hit);else if(hit.end&&sel===hit.end)hit.end=add(sel,-1);else if(sel===hit.start){hit.start=add(sel,1)}else hit.end=add(sel,-1)}
+  else{const adj=S.periods.find(p=>p.end&&add(p.end,1)===sel);if(adj)adj.end=sel;else S.periods.push({start:sel,end:sel})}
+  save();render()},
+ addrem(){const l=$('#nl').value.trim();if(!l)return $('#nl').focus();
+  S.reminders.push({id:'r'+Date.now(),type:$('#nt').value,label:l,time:$('#ntm').value||'09:00',lead:+$('#nld').value||0,on:true});save();askPerm();render()},
+ perm(){askPerm(true)},
+ test(){ring('Test alarm','Ye aise bajega 🔔','test')},
+ saveset(){S.settings.cycle=+$('#sc').value||28;S.settings.plen=+$('#sp').value||5;S.settings.theme=$('#st').value;save();render()},
+ export(){saveFile('chakra-backup.json',JSON.stringify(S,null,1))},
+ import(){const f=$('#fi');f.click();f.onchange=()=>{const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.periods)throw 0;S=d;S.fired=S.fired||{};save();render()}catch(e){alert('File sahi nahi hai')}};r.readAsText(f.files[0])}},
+ reset(){if(confirm('Saara data hamesha ke liye mit jayega. Pakka?')){S=structuredClone(DEF);save();render()}}};
+// ---------- alarm engine
+let AC,snoozed=null,cur=null,beepT;
+function beep(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();let t=AC.currentTime;for(let i=0;i<6;i++){const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=i%2?660:880;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);o.start(t);o.stop(t+.4);t+=.45}}catch(e){}}
+function askPerm(manual){if(!('Notification'in window)){if(manual)alert('Browser notifications support nahi karta; in-app alarm chalega.');return}
+ if(Notification.permission==='default')Notification.requestPermission().then(()=>tab==='rem'&&render())}
+function ring(title,msg,id){
+ cur={title,msg,id};$('#bt').textContent=title;$('#bm').textContent=msg;$('#banner').classList.add('on');
+ beep();clearInterval(beepT);beepT=setInterval(beep,5000);
+ try{if(Notification.permission==='granted')new Notification(title,{body:msg,tag:id})}catch(e){}
+ if(navigator.vibrate)navigator.vibrate([300,150,300])}
+function stopRing(){clearInterval(beepT);$('#banner').classList.remove('on')}
+$('#bok').onclick=stopRing;
+$('#snz').onclick=()=>{stopRing();const c=cur;setTimeout(()=>ring(c.title,c.msg,c.id),10*60*1000)};
+function tick(){
+ const now=new Date(),t=iso(now),hm=pad(now.getHours())+':'+pad(now.getMinutes()),st=status();
+ for(const r of S.reminders){
+  if(!r.on||hm<r.time)continue;
+  if(r.type==='daily'){if(S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,'Yaad dilane ke liye 🔔',r.id)}}
+  else if(r.type==='fert'){if(st&&!(S.settings.preg&&S.settings.preg.on)&&diff(add(st.ov,-5),t)===+r.lead&&S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,'Fertile window shuru hone wali hai',r.id)}}
+  else if(st&&!(S.settings.preg&&S.settings.preg.on)&&st.left===+r.lead){const k=t+st.next;if(S.fired[r.id]!==k){S.fired[r.id]=k;save();ring(r.label,r.lead?`Period ${r.lead} din mein expected hai (${fmt(st.next)})`:'Period aaj expected hai',r.id)}}}}
+setInterval(tick,15000);tick();
+const TIPS={Period:'Aaram karo, garam paani ki sekai lo, aur iron wala khana (palak, chana, gud) khao.',Follicular:'Energy badh rahi hai. Workout aur naye kaam shuru karne ka accha time.',Fertile:'Ovulation ke aaspaas energy aur mood aksar high rehte hain.',Luteal:'PMS ho sakta hai. Namak aur caffeine kam karo, kela aur nuts khao, neend poori lo.'};
+function insights(){const s=status(),st=stats();if(!s)return'';
+ const ph=s.open||s.phase.startsWith('Period')?'Period':s.cls==='f'?'Fertile':s.phase.startsWith('Luteal')?'Luteal':'Follicular';
+ let h=`<div class="card"><h2>Aaj ka tip</h2><p style="margin:0">${TIPS[ph]}</p>`;
+ const cnt={},P=sorted();
+ for(const[d,l]of Object.entries(S.logs))for(const k of l.sym||[]){const p=[...P].reverse().find(x=>x.start<=d);if(p&&Math.abs(diff(d,p.start)+1-s.day)<=1)cnt[k]=(cnt[k]||0)+1}
+ const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+ if(top.length)h+=`<p class="mute" style="margin:8px 0 0">Cycle day ${s.day} ke aaspaas tumne aksar likha: ${top.join(', ')}.</p>`;
+ h+='</div>';
+ const al=[];
+ if(st.c.slice(-3).some(c=>c<21||c>35))al.push('Pichli cycles 21–35 din ke usual range se bahar thi.');
+ if(st.sd!=null&&st.sd>7)al.push('Cycle length mein kaafi variation hai (±'+st.sd.toFixed(1)+' din).');
+ if(s.left<-14)al.push('Period 2+ hafte late hai. Pregnancy test ya doctor se salah lo.');
+ if(st.plen>8)al.push('Period ka average 8 din se zyada hai.');
+ if(al.length)h=`<div class="card" style="border-color:var(--acc)"><h2>Dhyan do</h2>${al.map(a=>`<p style="margin:4px 0">• ${a}</p>`).join('')}<p class="mute" style="margin:6px 0 0">Ye sirf pattern hai, diagnosis nahi. Chinta ho to doctor se milo.</p></div>`+h;
+ return h+`<div class="card"><h2>Claude se pucho</h2><p class="mute">Apne cycle ke baare mein sawal pucho. Sirf general jaankari milegi.</p><input id="aq" placeholder="e.g. Cramps kam kaise karun?"><br><br><button data-a="ask">Pucho</button><div id="ar" style="margin-top:10px;white-space:pre-wrap"></div></div>`}
+function loadDemo(){const t=today(),cy=[29,28,30,27,28,29];let st=add(t,-9);const starts=[st];for(const c of cy){st=add(st,-c);starts.unshift(st)}
+ S.periods=starts.map(x=>({start:x,end:add(x,4)}));S.logs={};
+ S.periods.forEach((p,i)=>{for(let d=0;d<5;d++){const k=add(p.start,d);S.logs[k]={flow:['Heavy','Heavy','Medium','Halka','Halka'][d],mood:['😢 Udaas','😐 Normal','😊 Khush'][(i+d)%3],sym:d<2?['Cramps','Thakaan']:d<3?['Back pain']:[]}}});
+ for(let i=24;i>=0;i--){const k=add(t,-i),p=[...S.periods].reverse().find(x=>x.start<=k),cd=diff(k,p.start)+1;S.logs[k]=Object.assign(S.logs[k]||{},{bbt:+(36.25+(cd>=15?.32:0)+Math.sin(i*2.1)*.05).toFixed(2)})}
+ S.settings.preg={on:false};save()}
+if(location.hash==='#demo'&&!S.periods.length)loadDemo();
+let DP;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();DP=e;if(tab==='set')render()});
+const cap=async n=>{try{return await window.claude.use(n)}catch(e){return null}};
+async function saveFile(name,data,type){const d=await cap('downloads');if(!d){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:type||'application/json'}));a.download=name;a.click();return}try{await d.save({filename:name,data:new Blob([data],{type:type||'application/json'})})}catch(e){}}
+async function hash(p,s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function vPreg(){const l=S.settings.preg.lmp,d=Math.max(0,diff(today(),l)),w=Math.floor(d/7),due=add(l,280),tri=w<13?1:w<27?2:3;
+ return`<h1>Pregnancy mode 🤰</h1><div class="card ring"><div class="big">${w}w ${d%7}d</div><p style="margin:8px 0 0;font-weight:600">Trimester ${tri}</p><p class="mute" style="margin:2px 0 0">Due date ${fmt(due)} · ${diff(due,today())} din baaki</p></div><div class="card"><h2>Aaj kaisa lag raha hai?</h2>${logForm(today())}</div><p class="mute">Ye andaza last period (LMP) se nikala gaya hai. Scan aur checkup ke liye doctor ki date follow karo. Period reminders is mode mein band hain.</p>`}
+function bbtCard(){const p=Object.entries(S.logs).filter(([k,l])=>l.bbt).sort().slice(-30),h='<div class="card"><h2>Temperature (BBT)</h2>';
+ if(p.length<2)return h+'<p class="mute">Roz subah uthte hi temperature log karo. Ovulation ke baad ye lagbhag 0.2–0.5°C badhta hai.</p></div>';
+ const v=p.map(x=>x[1].bbt),mn=Math.min(...v)-.1,mx=Math.max(...v)+.1,pts=v.map((y,i)=>`${10+i*300/(v.length-1)},${110-(y-mn)/(mx-mn)*100}`).join(' ');
+ let n='';if(v.length>=9){const b=v.slice(-9,-3).reduce((a,c)=>a+c,0)/6;if(v.slice(-3).every(x=>x>=b+.2))n='<p class="pill f">Temperature shift mila: ovulation ho chuki ho sakti hai</p>'}
+ return h+`<svg viewBox="0 0 320 120" style="width:100%;height:130px" role="img" aria-label="BBT chart"><polyline points="${pts}" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round"/>${v.map((y,i)=>`<circle cx="${10+i*300/(v.length-1)}" cy="${110-(y-mn)/(mx-mn)*100}" r="3" fill="var(--acc)"/>`).join('')}</svg><p class="mute">${v.length} readings · ${Math.min(...v)}–${Math.max(...v)}°C</p>${n}</div>`}
+function extraSet(){const pr=S.settings.preg&&S.settings.preg.on,pin=S.settings.pin;
+ return`<div class="card"><h2>Demo, CSV, Share</h2><p class="mute">Demo data se app ka pura look dekho. CSV Excel mein khulta hai. Partner share mein sirf phase aur agli date jati hai.</p><div class="row"><button data-a="demo">Demo data</button><button class="ghost" data-a="csv">CSV</button><button class="ghost" data-a="share">Partner share</button></div></div><div class="card"><h2>Pregnancy mode</h2>${pr?'<p class="mute">Chalu hai. Period predictions band hain.</p><button class="ghost" data-a="pregoff">Pregnancy mode band karo</button>':'<label>Last period ki pehli date (LMP)</label><input type="date" id="lmp" max="'+today()+'"><br><br><button data-a="pregon">Pregnancy mode chalu karo</button>'}</div>
+ <div class="card"><h2>App lock (PIN)</h2><p class="mute">App kholte hi PIN poochega. Ye privacy ke liye hai, data encryption nahi.</p>${pin?'<button class="ghost" data-a="rmpin">PIN hatao</button>':'<input id="np" type="password" inputmode="numeric" maxlength="8" placeholder="4-8 digit PIN"><br><br><button data-a="setpin">PIN lagao</button>'}</div>
+ <div class="card"><h2>Doctor report</h2><p class="mute">Cycles, symptoms aur temperature ka summary. File kholke Print → Save as PDF karo.</p><button data-a="report">Report download karo</button></div>
+ <div class="card"><h2>Cloud backup</h2><p class="mute">Tumhare claude.ai account se jura private backup. Sirf tum dekh sakti ho.</p><div class="row"><button data-a="cloudsave">Backup karo</button><button class="ghost" data-a="cloudload">Restore karo</button></div></div>
+ <div class="card"><h2>Phone par install</h2><p class="mute">Browser menu → "Add to Home screen". Offline aur full-screen ke liye saath wali manifest.json aur sw.js ke saath khud host karo.</p>${DP?'<button data-a="install">Install karo</button>':''}</div>`}
+function reportHTML(){const st=stats(),P=sorted(),sym={};Object.values(S.logs).forEach(l=>(l.sym||[]).forEach(k=>sym[k]=(sym[k]||0)+1));
+ const rows=P.map((p,i)=>`<tr><td>${p.start}</td><td>${p.end||'-'}</td><td>${p.end?diff(p.end,p.start)+1:'-'}</td><td>${i?diff(p.start,P[i-1].start):'-'}</td></tr>`).join('');
+ const bb=Object.entries(S.logs).filter(([k,l])=>l.bbt).sort().slice(-14).map(([k,l])=>`<tr><td>${k}</td><td>${l.bbt}</td></tr>`).join('');
+ return`<!doctype html><meta charset="utf-8"><title>Chakra report</title><style>body{font:15px system-ui;max-width:700px;margin:24px auto;padding:0 16px}table{border-collapse:collapse;width:100%;margin:8px 0 20px}td,th{border:1px solid #bbb;padding:6px;text-align:left}</style><h1>Menstrual health report</h1><p>Generated ${today()}</p><p><b>Avg cycle:</b> ${st.cyc} din · <b>Avg period:</b> ${st.plen} din · <b>Cycles logged:</b> ${P.length}${st.sd!=null?` · <b>Variation (SD):</b> ${st.sd.toFixed(1)} din`:''}</p><h2>Periods</h2><table><tr><th>Start</th><th>End</th><th>Length (din)</th><th>Cycle length (din)</th></tr>${rows}</table><h2>Symptoms</h2><p>${Object.entries(sym).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' ('+v+')').join(', ')||'Koi nahi'}</p>${bb?`<h2>BBT (last 14 readings, °C)</h2><table><tr><th>Date</th><th>Temp</th></tr>${bb}</table>`:''}<p><small>Self-tracked data; medical diagnosis nahi hai.</small></p>`}
+if(S.settings.pin)$('#lock').classList.add('on');
+$('#lb').onclick=async()=>{const p=S.settings.pin;if(await hash($('#lp').value,p.salt)===p.h){$('#lock').classList.remove('on');$('#lp').value='';$('#le').textContent=''}else $('#le').textContent='Galat PIN'};
+$('#lp').onkeydown=e=>{if(e.key==='Enter')$('#lb').click()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.settings.pin)$('#lock').classList.add('on')});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();
+</script>
+</body>
+</html>
