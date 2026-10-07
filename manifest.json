@@ -1,1 +1,38 @@
-{"name":"Chakra – Period Tracker","short_name":"Chakra","start_url":"./index.html","scope":"./","display":"standalone","background_color":"#f6f1f7","theme_color":"#a8275f","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]}
+{
+  "name": "Chakra – Period Tracker",
+  "short_name": "Chakra",
+  "description": "Period tracking, predictions aur reminders — sirf tumhare phone par, koi data upload nahi.",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#f6f1f7",
+  "theme_color": "#a8275f",
+  "lang": "hi",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Aaj ka log",
+      "short_name": "Log",
+      "description": "Aaj ki feelings aur symptoms log karo",
+      "url": "./index.html?tab=cal&action=logtoday",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Reminders",
+      "short_name": "Alarm",
+      "description": "Reminders aur notifications manage karo",
+      "url": "./index.html?tab=rem",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}
