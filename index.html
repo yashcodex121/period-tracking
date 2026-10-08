@@ -448,6 +448,7 @@ function bind(){
       aiInput.style.height='';aiInput.style.height=Math.min(aiInput.scrollHeight,110)+'px'});
     aiSend.addEventListener('click',()=>sendAIMessage(aiInput.value));
   }
+}
 
 const ACT={
   demo(){if(S.periods.length&&!confirm('Demo data will replace your current data. Are you sure?'))return;loadDemo();tab='today';render()},
