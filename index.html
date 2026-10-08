@@ -103,6 +103,28 @@ nav button[aria-selected=true]{color:var(--acc);background:var(--accsoft)}
 .ai-key-bar{background:var(--accsoft);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px}
 .ai-key-bar a{color:var(--acc);font-weight:600}
 .ai-disclaimer{font-size:11px;color:var(--mute);text-align:center;padding:4px 0 0}
+
+/* ── Reminder cards ──────────────────────────────────────────────────── */
+.rem-card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;transition:opacity .2s}
+.rem-card.rem-off{opacity:.5}
+.rem-top{display:flex;align-items:center;gap:10px}
+.rem-info{flex:1;min-width:0}
+.rem-label{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rem-meta{font-size:12px;color:var(--mute);margin-top:2px}
+.rem-del{flex:none;padding:6px 8px;font-size:16px;border:none;background:transparent;color:var(--mute)}
+.rem-del:hover{color:var(--acc)}
+.rem-bar{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.rem-bar-icon{font-size:13px;flex:none}
+.rem-cd{font-size:13px;font-weight:700;color:var(--acc);flex:none;min-width:64px}
+.rem-progress{flex:1;height:5px;background:var(--line);border-radius:99px;overflow:hidden}
+.rem-progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--fert));border-radius:99px;transition:width .5s linear}
+/* Toggle switch */
+.rem-toggle{position:relative;display:inline-block;width:38px;height:22px;flex:none;cursor:pointer}
+.rem-toggle input{opacity:0;width:0;height:0;position:absolute}
+.rem-toggle-track{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.2s}
+.rem-toggle input:checked+.rem-toggle-track{background:var(--acc)}
+.rem-toggle-track::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.rem-toggle input:checked+.rem-toggle-track::after{left:19px}
 </style>
 </head>
 <body>
@@ -250,10 +272,17 @@ function nav(){
   $('#nav').innerHTML=TABS.map(([k,v])=>`<button role="tab" aria-selected="${tab===k}" data-t="${k}">${v}</button>`).join('');
   $('#nav').onclick=e=>{const t=e.target.dataset.t;if(t){tab=t;sel=null;render()}}}
 
-function render(){nav();applyTheme();const f={today:vToday,cal:vCal,rem:vRem,stats:vStats,ai:vAI,set:vSet}[tab];$('#app').innerHTML=f();bind();
+function render(){
+  stopCountdownTimer();
+  nav();applyTheme();
+  const f={today:vToday,cal:vCal,rem:vRem,stats:vStats,ai:vAI,set:vSet}[tab];
+  $('#app').innerHTML=f();
+  bind();
+  if(tab==='rem')startCountdownTimer();
   // Handle logtoday shortcut from URL
   const p=new URLSearchParams(location.search);
-  if(p.get('action')==='logtoday'&&tab==='cal'){sel=today();history.replaceState({},'','./index.html');$('#app').innerHTML=vCal();bind()}}
+  if(p.get('action')==='logtoday'&&tab==='cal'){sel=today();history.replaceState({},'','./index.html');$('#app').innerHTML=vCal();bind()}
+}
 
 function applyTheme(){const t=S.settings.theme;if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t)}
 
@@ -326,35 +355,146 @@ function vCal(){
 function vRem(){
   const perm='Notification'in window?Notification.permission:'unsupported';
   const permLabel=perm==='granted'?'<span class="notif-badge on">Enabled ✓</span>':perm==='denied'?'<span class="notif-badge blocked">Blocked in browser</span>':perm==='unsupported'?'<span class="notif-badge off">Not supported</span>':'<span class="notif-badge off">Not enabled</span>';
-  const remList=S.reminders.map(r=>`
-    <div class="rem">
-      <input type="checkbox" data-rid="${r.id}" ${r.on?'checked':''} aria-label="${r.label}">
-      <div>
-        <b>${r.label}</b>
-        <div class="mute">${r.type==='period'?`${r.lead} day${r.lead===1?'':'s'} before period`:r.type==='fert'?`${r.lead} day${r.lead===1?'':'s'} before fertile window`:'Every day'}, ${r.time}</div>
+
+  const now=new Date();
+  const remList=S.reminders.map(r=>{
+    // Compute countdown to next fire
+    const countdown=remCountdown(r,now);
+    const cdStr=countdown!==null?`<span class="rem-cd" data-rid="${r.id}">${fmtCountdown(countdown)}</span>`:'';
+    return`<div class="rem-card ${r.on?'':'rem-off'}" id="remc-${r.id}">
+      <div class="rem-top">
+        <label class="rem-toggle" aria-label="Toggle ${r.label}">
+          <input type="checkbox" data-rid="${r.id}" ${r.on?'checked':''}>
+          <span class="rem-toggle-track"></span>
+        </label>
+        <div class="rem-info">
+          <div class="rem-label">${r.label}</div>
+          <div class="rem-meta">${remMeta(r)}</div>
+        </div>
+        <button class="ghost sm rem-del" data-del="${r.id}" aria-label="Delete">🗑</button>
       </div>
-      <button class="ghost sm" data-del="${r.id}" aria-label="Remove">✕</button>
-    </div>`).join('')||'<p class="mute">No reminders set.</p>';
+      ${r.on&&countdown!==null?`<div class="rem-bar">
+        <span class="rem-bar-icon">⏱</span>
+        <span class="rem-cd" data-rid="${r.id}">${fmtCountdown(countdown)}</span>
+        <div class="rem-progress"><div class="rem-progress-fill" style="width:${remProgress(r,now)}%"></div></div>
+      </div>`:''}
+    </div>`}).join('')||'<p class="mute" style="padding:8px 0">No reminders yet. Add one below!</p>';
+
   return`<h1>Alerts & Reminders</h1>
   <div class="card">
     <h2>Notifications ${permLabel}</h2>
-    <p class="mute">${perm==='granted'?'Background notifications are active. You\'ll be notified even when the app is closed.':perm==='denied'?'Notifications are blocked. Please enable them in your browser settings.':'Allow notifications so reminders work even when the app is closed.'}</p>
+    <p class="mute">${perm==='granted'?'Background notifications active — works even when app is closed.':perm==='denied'?'Blocked in browser settings. Please enable to receive alerts.':'Allow notifications so reminders fire even when the app is closed.'}</p>
     <div class="row">
-      <button data-a="perm">${perm==='granted'?'Test notification':'Enable notifications'}</button>
+      <button data-a="perm">${perm==='granted'?'Send test':'Enable notifications'}</button>
       <button class="ghost" data-a="test">Ring alarm</button>
     </div>
   </div>
-  <div class="card"><h2>Reminders</h2>${remList}</div>
+
+  <div class="card" id="rem-list-card">
+    <h2>My Reminders</h2>
+    ${remList}
+  </div>
+
   <div class="card">
-    <h2>Add reminder</h2>
-    <label>What should we remind you?</label><input id="nl" placeholder="e.g. Take iron tablet">
-    <div class="row">
-      <div><label>Type</label><select id="nt"><option value="daily">Every day</option><option value="period">Before period</option><option value="fert">Before fertile window</option></select></div>
-      <div><label>Time</label><input type="time" id="ntm" value="09:00"></div>
+    <h2>➕ Add Reminder</h2>
+    <label>What do you need to do?</label>
+    <input id="nl" placeholder="e.g. Take iron tablet, Drink water, Meditate…">
+
+    <label>Note / description (optional)</label>
+    <input id="nnote" placeholder="e.g. 2 tablets with food">
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>Time</label>
+        <input type="time" id="ntm" value="09:00">
+      </div>
+      <div>
+        <label>Repeat</label>
+        <select id="nrep">
+          <option value="daily">Every day</option>
+          <option value="once">Just once</option>
+          <option value="weekly">Every week</option>
+          <option value="interval">Custom interval</option>
+          <option value="period">Before period</option>
+          <option value="fert">Before fertile window</option>
+        </select>
+      </div>
     </div>
-    <label>Days before (for period / fertile type)</label><input type="number" id="nld" min="0" max="7" value="2">
-    <br><br><button data-a="addrem">Add reminder</button>
-  </div>`}
+
+    <div id="rem-interval-row" class="hide" style="margin-top:8px">
+      <label>Repeat every <input type="number" id="ninterval" min="1" max="90" value="2" style="width:70px;display:inline-block;margin:0 6px"> days</label>
+    </div>
+    <div id="rem-lead-row" class="hide" style="margin-top:8px">
+      <label>Days before <input type="number" id="nld" min="0" max="14" value="2" style="width:70px;display:inline-block;margin:0 6px"> days</label>
+    </div>
+
+    <label style="margin-top:12px">Priority</label>
+    <div class="chips" id="rem-pri-chips">
+      <button class="chip" aria-pressed="false" data-pri="low">🟢 Low</button>
+      <button class="chip" aria-pressed="true"  data-pri="med">🟡 Medium</button>
+      <button class="chip" aria-pressed="false" data-pri="high">🔴 High</button>
+    </div>
+
+    <br><button data-a="addrem" style="width:100%;margin-top:8px">Save Reminder</button>
+  </div>`
+}
+
+// ── Reminder helpers ───────────────────────────────────────────────────────
+function remMeta(r){
+  const rep={daily:'Every day',once:'Once',weekly:'Every week',interval:`Every ${r.interval||2} days`,period:`${r.lead||2}d before period`,fert:`${r.lead||2}d before fertile`}[r.type]||'Every day';
+  const pri={low:'🟢',med:'🟡',high:'🔴'}[r.priority||'med']||'🟡';
+  const note=r.note?` · <span style="color:var(--mute)">${r.note}</span>`:'';
+  return`${pri} ${rep} at ${r.time}${note}`;
+}
+
+function remCountdown(r,now){
+  if(!r.on)return null;
+  if(r.type==='period'||r.type==='fert')return null; // cycle-based, no simple countdown
+  const [h,m]=r.time.split(':').map(Number);
+  const next=new Date(now);
+  next.setHours(h,m,0,0);
+  if(next<=now)next.setDate(next.getDate()+1);
+  return next-now; // ms
+}
+
+function fmtCountdown(ms){
+  if(ms<=0)return'Now!';
+  const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60),d=Math.floor(h/24);
+  if(d>0)return`${d}d ${h%24}h`;
+  if(h>0)return`${h}h ${m%60}m`;
+  if(m>0)return`${m}m ${s%60}s`;
+  return`${s}s`;
+}
+
+function remProgress(r,now){
+  const [h,m]=r.time.split(':').map(Number);
+  const fire=new Date(now);fire.setHours(h,m,0,0);
+  if(fire<=now)fire.setDate(fire.getDate()+1);
+  const totalMs=24*60*60*1000;
+  const leftMs=fire-now;
+  return Math.max(0,Math.min(100,100-(leftMs/totalMs*100)));
+}
+
+// Live countdown updater — runs every second when on Alerts tab
+let cdTimer=null;
+function startCountdownTimer(){
+  stopCountdownTimer();
+  cdTimer=setInterval(()=>{
+    document.querySelectorAll('.rem-cd[data-rid]').forEach(el=>{
+      const r=S.reminders.find(x=>x.id===el.dataset.rid);
+      if(!r)return;
+      const ms=remCountdown(r,new Date());
+      if(ms!==null)el.textContent=fmtCountdown(ms);
+    });
+    document.querySelectorAll('.rem-progress-fill').forEach(el=>{
+      const card=el.closest('[id^="remc-"]');if(!card)return;
+      const rid=card.id.replace('remc-','');
+      const r=S.reminders.find(x=>x.id===rid);if(!r)return;
+      el.style.width=remProgress(r,new Date())+'%';
+    });
+  },1000);
+}
+function stopCountdownTimer(){clearInterval(cdTimer);cdTimer=null;}
 
 function vStats(){
   const st=stats();
@@ -438,7 +578,24 @@ function bind(){
     // AI suggestion chips
     const aiq=e.target.dataset.aiQ;if(aiq){sendAIMessage(aiq);return}
     const a=e.target.dataset.a;if(!a)return;ACT[a]&&ACT[a]()};
-  root.onchange=e=>{const id=e.target.dataset.rid;if(id){const r=S.reminders.find(r=>r.id===id);r.on=e.target.checked;save();if(r.on)askPerm()}}
+  root.onchange=e=>{
+    const id=e.target.dataset.rid;
+    if(id){const r=S.reminders.find(r=>r.id===id);r.on=e.target.checked;save();if(r.on)askPerm();render();return}
+    // show/hide interval & lead rows when repeat type changes
+    if(e.target.id==='nrep'){
+      const v=e.target.value;
+      const ir=$('#rem-interval-row'),lr=$('#rem-lead-row');
+      if(ir)ir.className=v==='interval'?'':'hide';
+      if(lr)lr.className=(v==='period'||v==='fert')?'':'hide';
+    }
+  }
+  // Priority chips in Add Reminder form
+  const priWrap=$('#rem-pri-chips');
+  if(priWrap){priWrap.onclick=e=>{
+    const c=e.target.closest('.chip');if(!c)return;
+    priWrap.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+    c.setAttribute('aria-pressed','true');
+  }}
   // AI chat form wiring (only if on AI tab)
   const aiInput=$('#ai-input'), aiSend=$('#ai-send');
   if(aiInput&&aiSend){
@@ -495,8 +652,23 @@ const ACT={
     save();render()},
   addrem(){
     const l=$('#nl').value.trim();if(!l)return $('#nl').focus();
-    S.reminders.push({id:'r'+Date.now(),type:$('#nt').value,label:l,time:$('#ntm').value||'09:00',lead:+$('#nld').value||0,on:true});
-    save();askPerm();render()},
+    const rep=$('#nrep').value;
+    // get priority from chips
+    const priChip=document.querySelector('#rem-pri-chips .chip[aria-pressed="true"]');
+    const pri=priChip?priChip.dataset.pri:'med';
+    S.reminders.push({
+      id:'r'+Date.now(),
+      type:rep,
+      label:l,
+      note:$('#nnote').value.trim()||'',
+      time:$('#ntm').value||'09:00',
+      lead:+($('#nld').value||2),
+      interval:+($('#ninterval').value||2),
+      priority:pri,
+      on:true
+    });
+    save();askPerm();render();
+  },
   perm(){askPerm(true)},
   test(){
     // Test via SW notification if available, else in-app
@@ -543,11 +715,36 @@ $('#snz').onclick=()=>{stopRing();const c=cur;setTimeout(()=>ring(c.title,c.msg,
 function tick(){
   const now=new Date(),t=iso(now),hm=pad(now.getHours())+':'+pad(now.getMinutes()),st=status();
   for(const r of S.reminders){
-    if(!r.on||hm<r.time)continue;
-    if(r.type==='daily'){if(S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,'Reminder 🔔',r.id)}}
-    else if(r.type==='fert'){if(st&&!(S.settings.preg&&S.settings.preg.on)&&diff(add(st.ov,-5),t)===+r.lead&&S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,'Your fertile window is coming up',r.id)}}
-    else if(st&&!(S.settings.preg&&S.settings.preg.on)&&st.left===+r.lead){const k=t+st.next;if(S.fired[r.id]!==k){S.fired[r.id]=k;save();ring(r.label,r.lead?`Period expected in ${r.lead} day${r.lead===1?'':'s'} (${fmt(st.next)})`:'Period expected today',r.id)}}}}
-setInterval(tick,15000);tick();
+    if(!r.on)continue;
+    // time window check — only fire within the right minute
+    if(hm!==r.time)continue;
+
+    if(r.type==='daily'){
+      if(S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,r.note||'Reminder 🔔',r.id)}
+    }
+    else if(r.type==='once'){
+      if(!S.fired[r.id]){S.fired[r.id]=t;save();ring(r.label,r.note||'One-time reminder 🔔',r.id);r.on=false;save()}
+    }
+    else if(r.type==='weekly'){
+      const wk=`${t.slice(0,8)}W${Math.floor(diff(t,'2024-01-01')/7)}`;
+      if(S.fired[r.id]!==wk){S.fired[r.id]=wk;save();ring(r.label,r.note||'Weekly reminder 🔔',r.id)}
+    }
+    else if(r.type==='interval'){
+      const ivl=+(r.interval||2);
+      // check if today is a fire day relative to creation (use id timestamp)
+      const created=new Date(+r.id.replace('r',''));
+      const daysSince=Math.floor((now-created)/864e5);
+      if(daysSince%ivl===0&&S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,r.note||`Every ${ivl} days 🔔`,r.id)}
+    }
+    else if(r.type==='fert'){
+      if(st&&!(S.settings.preg&&S.settings.preg.on)&&diff(add(st.ov,-5),t)===+r.lead&&S.fired[r.id]!==t){S.fired[r.id]=t;save();ring(r.label,r.note||'Your fertile window is coming up',r.id)}
+    }
+    else if(r.type==='period'){
+      if(st&&!(S.settings.preg&&S.settings.preg.on)&&st.left===+r.lead){const k=t+st.next;if(S.fired[r.id]!==k){S.fired[r.id]=k;save();ring(r.label,r.note||(r.lead?`Period expected in ${r.lead} day${r.lead===1?'':'s'} (${fmt(st.next)})`:'Period expected today'),r.id)}}
+    }
+  }
+}
+setInterval(tick,30*1000);tick();
 
 // ── Tips & Insights ────────────────────────────────────────────────────────
 const TIPS={
