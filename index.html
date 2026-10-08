@@ -73,6 +73,36 @@ nav button[aria-selected=true]{color:var(--acc);background:var(--accsoft)}
 #install-bar p{margin:0;font-size:13px;color:var(--acc);font-weight:500;flex:1}
 @media(prefers-reduced-motion:no-preference){#banner.on{animation:sh .5s 2}}
 @keyframes sh{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+/* ── AI Assistant ───────────────────────────────────────────────────── */
+#ai-wrap{display:flex;flex-direction:column;height:calc(100vh - 130px);min-height:300px}
+#ai-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0 12px;scroll-behavior:smooth}
+.msg{display:flex;gap:8px;align-items:flex-end;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.msg-avatar{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--accsoft)}
+.msg.user .msg-avatar{background:var(--acc);color:#fff}
+.msg-bubble{max-width:82%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--acc);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble b{font-weight:600}
+.msg-bubble ul{margin:6px 0;padding-left:18px}
+.msg-bubble li{margin:2px 0}
+.typing{display:flex;gap:4px;padding:4px 2px;align-items:center}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--mute);animation:blink 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+#ai-form{display:flex;gap:8px;padding:10px 0 0;border-top:1px solid var(--line)}
+#ai-input{flex:1;border-radius:22px;padding:10px 14px;resize:none;overflow:hidden;min-height:42px;max-height:110px;font-size:14px;line-height:1.4}
+#ai-send{flex:none;width:42px;height:42px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+#ai-send:disabled{opacity:.4;cursor:not-allowed}
+.ai-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ai-chip{padding:6px 12px;border-radius:99px;background:var(--bg);border:1px solid var(--line);color:var(--acc);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.ai-chip:hover{background:var(--accsoft)}
+.ai-key-bar{background:var(--accsoft);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px}
+.ai-key-bar a{color:var(--acc);font-weight:600}
+.ai-disclaimer{font-size:11px;color:var(--mute);text-align:center;padding:4px 0 0}
 </style>
 </head>
 <body>
@@ -214,13 +244,13 @@ let tab='today',cm=new Date(),sel=null;
   if(t)tab=t;
 })();
 
-const TABS=[['today','Today'],['cal','Calendar'],['rem','Alerts'],['stats','Stats'],['set','Settings']];
+const TABS=[['today','Today'],['cal','Calendar'],['rem','Alerts'],['stats','Stats'],['ai','AI'],['set','Settings']];
 
 function nav(){
   $('#nav').innerHTML=TABS.map(([k,v])=>`<button role="tab" aria-selected="${tab===k}" data-t="${k}">${v}</button>`).join('');
   $('#nav').onclick=e=>{const t=e.target.dataset.t;if(t){tab=t;sel=null;render()}}}
 
-function render(){nav();applyTheme();const f={today:vToday,cal:vCal,rem:vRem,stats:vStats,set:vSet}[tab];$('#app').innerHTML=f();bind();
+function render(){nav();applyTheme();const f={today:vToday,cal:vCal,rem:vRem,stats:vStats,ai:vAI,set:vSet}[tab];$('#app').innerHTML=f();bind();
   // Handle logtoday shortcut from URL
   const p=new URLSearchParams(location.search);
   if(p.get('action')==='logtoday'&&tab==='cal'){sel=today();history.replaceState({},'','./index.html');$('#app').innerHTML=vCal();bind()}}
@@ -348,6 +378,7 @@ function vStats(){
 
 function vSet(){
   const s=S.settings;
+  const keySet=!!(s.geminiKey);
   return`<h1>Settings</h1>
   <div class="card">
     <label>Default cycle length (days)</label><input type="number" id="sc" min="21" max="45" value="${s.cycle}">
@@ -359,6 +390,19 @@ function vSet(){
       <option value="dark" ${s.theme==='dark'?'selected':''}>Dark</option>
     </select>
     <br><br><button data-a="saveset">Save settings</button>
+  </div>
+  <div class="card">
+    <h2>AI Assistant 🌸</h2>
+    <p class="mute">Add a free Gemini API key for smarter, more detailed AI answers. Without a key, the assistant uses built-in health knowledge.<br><br>
+    Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--acc);font-weight:600">aistudio.google.com</a> (no credit card needed).</p>
+    <label>${keySet?'API key (saved — leave blank to clear)':'Gemini API key'}</label>
+    <input id="ai-key-input" type="password" placeholder="${keySet?'••••••••••••••••••••••••• (saved)':'Paste your API key here'}" autocomplete="off">
+    <br><br>
+    <div class="row">
+      <button data-a="saveaikey">Save API key</button>
+      ${keySet?`<button class="ghost" onclick="S.settings.geminiKey=null;save();render()">Clear key</button>`:''}
+    </div>
+    ${keySet?'<p class="mute" style="margin-top:8px">✓ Gemini AI is active. Your key is stored locally on your device only.</p>':''}
   </div>
   ${extraSet()}
   <div class="card">
@@ -391,8 +435,19 @@ function bind(){
   root.onclick=e=>{
     const dd=e.target.closest('[data-day]');if(dd){sel=dd.dataset.day;return render()}
     const rid=e.target.dataset.del;if(rid){S.reminders=S.reminders.filter(r=>r.id!==rid);save();return render()}
+    // AI suggestion chips
+    const aiq=e.target.dataset.aiQ;if(aiq){sendAIMessage(aiq);return}
     const a=e.target.dataset.a;if(!a)return;ACT[a]&&ACT[a]()};
-  root.onchange=e=>{const id=e.target.dataset.rid;if(id){const r=S.reminders.find(r=>r.id===id);r.on=e.target.checked;save();if(r.on)askPerm()}}}
+  root.onchange=e=>{const id=e.target.dataset.rid;if(id){const r=S.reminders.find(r=>r.id===id);r.on=e.target.checked;save();if(r.on)askPerm()}}
+  // AI chat form wiring (only if on AI tab)
+  const aiInput=$('#ai-input'), aiSend=$('#ai-send');
+  if(aiInput&&aiSend){
+    aiInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAIMessage(aiInput.value)}});
+    aiInput.addEventListener('input',()=>{
+      aiInput.style.height='';aiInput.style.height=Math.min(aiInput.scrollHeight,110)+'px'});
+    aiSend.addEventListener('click',()=>sendAIMessage(aiInput.value));
+  }
 
 const ACT={
   demo(){if(S.periods.length&&!confirm('Demo data will replace your current data. Are you sure?'))return;loadDemo();tab='today';render()},
@@ -450,6 +505,14 @@ const ACT={
       ring('Test notification','Notifications are working 🔔','test');
     }},
   saveset(){S.settings.cycle=+$('#sc').value||28;S.settings.plen=+$('#sp').value||5;S.settings.theme=$('#st').value;save();render()},
+  saveaikey(){
+    const k=($('#ai-key-input').value||'').trim();
+    S.settings.geminiKey=k||null;
+    save();
+    const msg=k?'API key saved ✓ — Gemini AI is now active.':'API key cleared. Using built-in knowledge.';
+    alert(msg);
+    render();
+  },
   export(){saveFile('chakra-backup.json',JSON.stringify(S,null,1))},
   import(){const f=$('#fi');f.click();f.onchange=()=>{const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.periods)throw 0;S=d;S.fired=S.fired||{};save();render()}catch(e){alert('Invalid file')}};r.readAsText(f.files[0])}},
   reset(){if(confirm('All data will be permanently deleted. Are you sure?')){S=structuredClone(DEF);save();render()}}};
@@ -508,6 +571,210 @@ function insights(){
   if(st.plen>8)al.push('Average period length is over 8 days.');
   if(al.length)h=`<div class="card" style="border-color:var(--acc)"><h2>Heads up</h2>${al.map(a=>`<p style="margin:4px 0">• ${a}</p>`).join('')}<p class="mute" style="margin:6px 0 0">These are patterns, not diagnoses. See a doctor if you're concerned.</p></div>`+h;
   return h+`<div class="card"><h2>Ask about your cycle</h2><p class="mute">Ask a question about your cycle. General information only.</p><input id="aq" placeholder="e.g. How can I reduce cramps?"><br><br><button data-a="ask">Ask</button><div id="ar" style="margin-top:10px;white-space:pre-wrap"></div></div>`}
+
+// ── AI Health Assistant ────────────────────────────────────────────────────
+// Chat history stored in memory only (not persisted — private by default)
+let aiHistory = [];
+
+const AI_SUGGESTED = [
+  'How can I reduce period cramps naturally?',
+  'What foods help with PMS?',
+  'Why is my cycle irregular?',
+  'What does the fertile window mean?',
+  'How does stress affect my period?',
+  'What are signs of ovulation?',
+  'Why do I feel tired during my period?',
+  'How can I track ovulation at home?',
+];
+
+function buildAIContext() {
+  const s = status(), st = stats();
+  const recentSym = Object.entries(S.logs)
+    .sort((a,b)=>a[0]<b[0]?1:-1).slice(0,14)
+    .flatMap(([,l])=>l.sym||[]);
+  const symCount = {};
+  recentSym.forEach(k=>symCount[k]=(symCount[k]||0)+1);
+  const topSym = Object.entries(symCount).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k])=>k).join(', ')||'none logged';
+  const recentMoods = Object.entries(S.logs).sort((a,b)=>a[0]<b[0]?1:-1).slice(0,7).map(([,l])=>l.mood).filter(Boolean).join(', ')||'none logged';
+  const fc = forecast(1)[0];
+
+  return `You are Chakra AI, a warm, knowledgeable personal health assistant built into the Chakra period tracking app.
+
+RULES:
+- Give helpful, accurate, evidence-based health information.
+- Be conversational, caring, and concise. Use short paragraphs or bullet points.
+- NEVER diagnose medical conditions. If something sounds serious, always say "please consult a doctor."
+- You have the user's cycle data below — use it to give personalized answers.
+- Do not repeat the user's data back unless it is directly relevant.
+- Format responses clearly. Use **bold** for key terms. Use bullet lists when listing multiple items.
+
+USER'S CYCLE DATA (use this to personalise answers):
+- Cycles logged: ${st.n}
+- Average cycle length: ${st.cyc} days
+- Average period length: ${st.plen} days
+- Cycle regularity SD: ${st.sd!=null?st.sd.toFixed(1)+' days':'not enough data'}
+- Today: cycle day ${s?s.day:'unknown'}, phase: ${s?s.phase:'unknown'}
+- Next period: ${s?`in ${s.left} days (${fmt(s.next)})`:'unknown'}
+- Next ovulation: ${s?fmt(s.ov):'unknown'}
+- Recent symptoms (last 2 weeks): ${topSym}
+- Recent moods: ${recentMoods}
+${S.settings.preg&&S.settings.preg.on?'- Currently in pregnancy mode.':''}`;
+}
+
+async function callGemini(userMsg) {
+  const apiKey = S.settings.geminiKey||'';
+  if (!apiKey) return null; // no key → use fallback
+
+  // Build contents array from history + new message
+  const systemCtx = buildAIContext();
+  const contents = [
+    // inject system as first user turn (Gemini Flash supports system via first turn)
+    ...aiHistory.map(m=>({role:m.role,parts:[{text:m.text}]})),
+    {role:'user', parts:[{text:userMsg}]}
+  ];
+
+  // Prepend system prompt as a special first exchange if history is empty
+  const body = {
+    system_instruction: {parts:[{text:systemCtx}]},
+    contents,
+    generationConfig:{temperature:0.7,maxOutputTokens:600,topP:0.9}
+  };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+    {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    const msg = err?.error?.message||`HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text||'Sorry, I could not generate a response.';
+}
+
+// Rule-based fallback — works offline, no API key needed
+function fallbackAnswer(q) {
+  q = q.toLowerCase();
+  if (/cramp|pain|hurt/.test(q)) return `**Period cramps** happen when your uterus contracts to shed its lining.\n\n**Natural relief tips:**\n- Apply a heating pad to your lower abdomen\n- Light exercise like walking or yoga can help\n- Anti-inflammatory foods: ginger tea, turmeric, omega-3s\n- Magnesium-rich foods: nuts, seeds, dark chocolate\n- Stay hydrated and reduce caffeine\n\nIf cramps are severe enough to disrupt daily life, please see a doctor — it could be endometriosis or fibroids.`;
+  if (/pms|mood|irritab|sad|anxious|luteal/.test(q)) return `**PMS (Premenstrual Syndrome)** typically occurs in the luteal phase (days after ovulation).\n\n**What helps:**\n- Reduce salt, caffeine, and alcohol\n- Eat complex carbs: oats, sweet potato, banana\n- Regular aerobic exercise\n- Prioritise 7–9 hours of sleep\n- Magnesium and B6 supplements may help (ask your doctor)\n\nIf PMS severely affects your life, it could be PMDD — worth discussing with a doctor.`;
+  if (/fertil|ovulat|conceive|pregnant/.test(q)) return `**The fertile window** is the ~6 days leading up to and including ovulation.\n\n- Ovulation typically occurs ~14 days before your next period\n- Your Chakra app predicts this based on your logged cycles\n- Signs of ovulation: clear egg-white cervical mucus, slight temperature rise (BBT), mild pelvic pain (mittelschmerz)\n- Sperm can survive 3–5 days inside the body\n\nFor conception, timing intercourse in this window maximises chances.`;
+  if (/irregu|miss|late|skip/.test(q)) return `**Irregular cycles** can be caused by many factors:\n\n- **Stress** — cortisol disrupts hormone signals\n- **Weight changes** — under or overweight affects estrogen\n- **Sleep disruption** — shift work, poor sleep\n- **Thyroid issues** — hypo/hyperthyroidism\n- **PCOS** — polycystic ovary syndrome\n- **Perimenopause** — if you're in your 40s\n\nOccasional variation (±7 days) is normal. If you consistently miss periods or they're very irregular, see a doctor.`;
+  if (/stress/.test(q)) return `**Stress and your cycle** are closely linked through the HPA (hypothalamic-pituitary-adrenal) axis.\n\n- High cortisol can delay or suppress ovulation\n- This can make your cycle longer or cause a missed period\n- Chronic stress may worsen PMS symptoms\n\n**What helps:** regular exercise, meditation, adequate sleep, limiting caffeine, and talking to someone you trust.`;
+  if (/tire|fatigue|energy|exhaust/.test(q)) return `**Fatigue during your period** is very common. Causes include:\n\n- **Iron loss** from bleeding — especially with heavy flow\n- **Prostaglandins** (the chemicals causing cramps) cause fatigue\n- **Hormonal drop** in estrogen and progesterone\n\n**What helps:**\n- Iron-rich foods: spinach, lentils, red meat, pumpkin seeds\n- Pair iron with vitamin C for better absorption\n- Stay hydrated\n- Rest when you need to — it's okay\n\nIf fatigue is severe, ask your doctor to check for anaemia.`;
+  if (/flow|heavy|light|bleed/.test(q)) return `**Normal period flow** varies person to person.\n\n- **Light:** needing fewer than 3 pads/tampons per day\n- **Medium:** 3–6 pads/tampons per day\n- **Heavy:** soaking a pad/tampon every 1–2 hours\n\nHeavy flow (menorrhagia) can cause anaemia over time. If you're consistently soaking through protection hourly or passing large clots, see a doctor.`;
+  if (/bbt|temperature|basal/.test(q)) return `**BBT (Basal Body Temperature)** charting tracks your resting temperature to detect ovulation.\n\n- Take your temperature every morning before getting up\n- After ovulation, progesterone causes a rise of **0.2–0.5°C**\n- Log it in Chakra — the app will detect the shift automatically\n- A sustained rise for 3+ days confirms ovulation occurred\n\nBBT confirms ovulation happened but doesn't predict it in advance — pair it with cervical mucus observation for best results.`;
+  if (/discharge|mucus|cervical/.test(q)) return `**Cervical mucus** changes throughout your cycle:\n\n- **After period:** dry or sticky\n- **Approaching ovulation:** creamy, then wet and slippery\n- **Peak fertility:** clear, stretchy, egg-white consistency\n- **After ovulation:** dries up, becomes thick/cloudy\n\nEgg-white mucus is your body's natural fertility signal. Any unusual colour (yellow/green), smell, or persistent itching could indicate infection — see a doctor.`;
+  if (/diet|food|eat|nutrition/.test(q)) return `**Eating for your cycle:**\n\n**Period phase:** iron (spinach, lentils), magnesium (dark chocolate, nuts), anti-inflammatories (ginger, turmeric)\n**Follicular phase:** light proteins, fermented foods, leafy greens\n**Ovulation:** antioxidants (berries, colourful veg), zinc (pumpkin seeds, shellfish)\n**Luteal phase:** complex carbs (oats, sweet potato), B6 (bananas, chickpeas), calcium (dairy, broccoli) to reduce PMS`;
+  if (/sleep|insomnia|rest/.test(q)) return `**Sleep and your cycle** are deeply connected.\n\n- **Follicular phase:** rising estrogen improves sleep quality\n- **Luteal phase:** progesterone can cause sleepiness but disrupts deep sleep\n- **Before period:** body temperature rises slightly, which can cause restlessness\n\n**Tips:** keep a cool room, limit screens before bed, avoid caffeine after 2pm, and try to sleep and wake at consistent times.`;
+  if (/exercise|workout|sport|gym/.test(q)) return `**Exercise across your cycle:**\n\n- **Period:** gentle movement — walking, yoga, swimming — can reduce cramps\n- **Follicular (days 1–13):** energy rises, great for strength training and HIIT\n- **Ovulation:** peak energy and pain tolerance — ideal for personal bests\n- **Luteal (days 15–28):** energy dips, favour steady-state cardio and lighter weights\n\nListening to your body is always the right answer.`;
+
+  const s = status(), st = stats();
+  return `I'm here to help with any health questions related to your cycle, symptoms, nutrition, mood, or general wellbeing.\n\n**Your cycle right now:**\n- Day ${s?s.day:'?'} of your cycle\n- Phase: ${s?s.phase:'not enough data'}\n- ${st.n} period${st.n===1?'':'s'} logged\n\nTry asking me something specific — like "why do I feel tired on my period?" or "what foods help with cramps?"`;
+}
+
+function mdToHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs,m=>`<ul>${m}</ul>`)
+    .replace(/\n{2,}/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+function appendMsg(role, text, isTyping=false) {
+  const wrap = $('#ai-msgs');
+  if (!wrap) return;
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = isTyping
+    ? `<div class="msg-avatar">${role==='ai'?'🌸':'👤'}</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`
+    : `<div class="msg-avatar">${role==='ai'?'🌸':'👤'}</div><div class="msg-bubble">${role==='ai'?mdToHtml(text):text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
+  if (isTyping) div.id = 'ai-typing';
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+async function sendAIMessage(userText) {
+  userText = userText.trim();
+  if (!userText) return;
+
+  const input = $('#ai-input'), btn = $('#ai-send');
+  if (input) input.value = '';
+  if (btn) btn.disabled = true;
+  if (input) input.style.height = '';
+
+  appendMsg('user', userText);
+  aiHistory.push({role:'user', text:userText});
+
+  const typing = appendMsg('ai', '', true);
+
+  let reply;
+  try {
+    const gemini = await callGemini(userText);
+    reply = gemini !== null ? gemini : fallbackAnswer(userText);
+  } catch(e) {
+    // Show friendly error + fallback
+    const errMsg = e.message||'';
+    if (errMsg.includes('API_KEY_INVALID')||errMsg.includes('API key not valid')) {
+      reply = '⚠️ Your Gemini API key looks invalid. Please check it in **Settings → AI Assistant**.\n\nI\'ll use my built-in knowledge for now:\n\n' + fallbackAnswer(userText);
+    } else if (errMsg.includes('quota')||errMsg.includes('RESOURCE_EXHAUSTED')) {
+      reply = '⚠️ Gemini API quota reached. Using built-in knowledge:\n\n' + fallbackAnswer(userText);
+    } else {
+      reply = fallbackAnswer(userText);
+    }
+  }
+
+  aiHistory.push({role:'model', text:reply});
+  if (typing) typing.remove();
+  appendMsg('ai', reply);
+  if (btn) btn.disabled = false;
+  const wrap = $('#ai-msgs');
+  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+}
+
+function vAI() {
+  const hasKey = !!(S.settings.geminiKey);
+  const keyBar = hasKey ? '' : `<div class="ai-key-bar">
+    💡 Add a free <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Gemini API key</a> in <b>Settings → AI Assistant</b> for smarter answers. Works without it too!
+  </div>`;
+
+  const suggested = AI_SUGGESTED.slice(0,6).map(q=>
+    `<button class="ai-chip" data-ai-q="${q.replace(/"/g,'&quot;')}">${q}</button>`
+  ).join('');
+
+  const msgs = aiHistory.length === 0
+    ? `<div class="msg ai">
+        <div class="msg-avatar">🌸</div>
+        <div class="msg-bubble">Hi! I'm <b>Chakra AI</b>, your personal health assistant. 👋<br><br>
+        I can answer questions about your cycle, symptoms, nutrition, mood, sleep, and general reproductive health. I use your logged data to give personalised answers.<br><br>
+        What would you like to know?</div>
+      </div>`
+    : aiHistory.map(m => `<div class="msg ${m.role==='user'?'user':'ai'}">
+        <div class="msg-avatar">${m.role==='user'?'👤':'🌸'}</div>
+        <div class="msg-bubble">${m.role==='user'?m.text.replace(/&/g,'&amp;').replace(/</g,'&lt;'):mdToHtml(m.text)}</div>
+      </div>`).join('');
+
+  return `<h1>AI Assistant 🌸</h1>
+  ${keyBar}
+  <div class="card" style="padding-bottom:0">
+    <div id="ai-wrap">
+      <div id="ai-msgs">${msgs}</div>
+      <div>
+        <div class="ai-chips" id="ai-suggestions">${suggested}</div>
+        <div id="ai-form">
+          <textarea id="ai-input" rows="1" placeholder="Ask anything about your health…" aria-label="Ask AI assistant"></textarea>
+          <button id="ai-send" aria-label="Send">➤</button>
+        </div>
+        <div class="ai-disclaimer">For informational purposes only — not medical advice.</div>
+      </div>
+    </div>
+  </div>`;
+}
 
 // ── Install prompt bar ─────────────────────────────────────────────────────
 let DP=null;

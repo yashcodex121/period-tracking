@@ -9,7 +9,7 @@
   "orientation": "portrait-primary",
   "background_color": "#f6f1f7",
   "theme_color": "#a8275f",
-  "lang": "hi",
+  "lang": "en",
   "dir": "ltr",
   "categories": ["health", "lifestyle"],
   "icons": [
@@ -20,7 +20,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Aaj ka log",
+      "name": "AI Assistant",
+      "short_name": "AI",
+      "description": "Chat with your personal health assistant",
+      "url": "./index.html?tab=ai",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Log Today",
       "short_name": "Log",
       "description": "Log today's feelings and symptoms",
       "url": "./index.html?tab=cal&action=logtoday",
@@ -28,7 +35,7 @@
     },
     {
       "name": "Reminders",
-      "short_name": "Alarm",
+      "short_name": "Alerts",
       "description": "Manage reminders and notifications",
       "url": "./index.html?tab=rem",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
